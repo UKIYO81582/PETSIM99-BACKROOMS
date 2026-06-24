@@ -66,7 +66,7 @@ local roomsToStore = {
 local doneCleaning = false
 local httpRequest = request or http_request or (syn and syn.request)
 
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu"))()
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
 	Name = "PS99 Backrooms Script",
@@ -126,15 +126,18 @@ local function getCharacter()
 	return localPlayer.Character or localPlayer.CharacterAdded:Wait()
 end
 
-local character = getCharacter()
-if character then
-	local enterPart = workspace:WaitForChild("__THINGS")
-		:WaitForChild("Instances")
-		:WaitForChild("Backrooms")
-		:WaitForChild("Teleports")
-		:WaitForChild("Enter")
-	character:PivotTo(enterPart.CFrame)
-end
+-- FIXED INITIAL TELEPORT FREEZE LOOP (Isolated to run in the background safely)
+task.spawn(function()
+	local character = getCharacter()
+	if character then
+		local things = workspace:WaitForChild("__THINGS")
+		local instances = things:WaitForChild("Instances")
+		local backrooms = instances:WaitForChild("Backrooms")
+		local teleports = backrooms:WaitForChild("Teleports")
+		local enterPart = teleports:WaitForChild("Enter")
+		character:PivotTo(enterPart.CFrame)
+	end
+end)
 
 local function createMessage(msg)
 	if workspace:FindFirstChildOfClass("Message") then
@@ -171,7 +174,7 @@ local function getThumbnailUrl(iconId)
 		return default
 	end
 
-	local imageUrl = decoded.data[1].imageUrl
+	local imageUrl = decoded.data.imageUrl
 	if not imageUrl then
 		warn("NO DATA FOR IMAGE 333")
 		return default
@@ -197,21 +200,17 @@ local function sendWebhook(data)
 		return
 	end
 
-	local success, response = pcall(function()
-		return httpRequest({
+	pcall(function()
+		httpRequest({
 			Url = getgenv().webhook,
 			Method = "POST",
 			Headers = {	["Content-Type"] = "application/json" },
 			Body = body
 		})
 	end)
-
-	if not success then
-		warn("HOLY BAD 333", tostring(response))
-	end
 end
 
--- FIXED SERVER HOPPING FUNCTION FOR DELTA EXECUTOR (NO OTHER SECTIONS EDITED)
+-- FIXED SERVER HOPPING FUNCTION FOR DELTA EXECUTOR (Bypasses Verify Teleport Toggle)
 local function serverHop(reason)
 	local message = createMessage(reason or "Server hopping...")
 	
