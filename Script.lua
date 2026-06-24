@@ -66,7 +66,7 @@ local roomsToStore = {
 local doneCleaning = false
 local httpRequest = request or http_request or (syn and syn.request)
 
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu"))()
 
 local Window = Rayfield:CreateWindow({
 	Name = "PS99 Backrooms Script",
@@ -103,40 +103,25 @@ _G.AutoTapper = false
 
 _G.SelectedLockedEggMult = "Any"
 
-local EggDropdown
-local FreeEggTPButton
-local AutoBestEgg
-local LockedEggTarget
-local LockedEggTPButton
-local AutoLockedEgg
-local AnomalyTPButton
-local AutoAnomaly
-local AutoHatch
-local DisableHatchAnimation
-local BreakablesRoomTPButton
-local DeepChestRoomTPButton
-local BossTPButton
-local AutoFarmBoss
-local RejoinButton
-local ServerHopButton
-local InfPetSpeedButton
-local AutoTapperToggle
-
 local function getCharacter()
 	return localPlayer.Character or localPlayer.CharacterAdded:Wait()
 end
 
--- FIXED INITIAL TELEPORT FREEZE LOOP (Isolated to run in the background safely)
+-- BACKGROUND INITIAL TELEPORT TO PREVENT UI CRASHING
 task.spawn(function()
 	local character = getCharacter()
 	if character then
-		local things = workspace:WaitForChild("__THINGS")
-		local instances = things:WaitForChild("Instances")
-		local backrooms = instances:WaitForChild("Backrooms")
-		local teleports = backrooms:WaitForChild("Teleports")
-		local enterPart = teleports:WaitForChild("Enter")
-		character:PivotTo(enterPart.CFrame)
-	end
+		pcall(function()
+			local things = workspace:WaitForChild("__THINGS", 10)
+			local instances = things and things:WaitForChild("Instances", 5)
+			local backrooms = instances and instances:WaitForChild("Backrooms", 5)
+			local teleports = backrooms and backrooms:WaitForChild("Teleports", 5)
+			local enterPart = teleports and teleports:WaitForChild("Enter", 5)
+			if enterPart then
+				character:PivotTo(enterPart.CFrame)
+			end
+		 pcall(function()
+	end)
 end)
 
 local function createMessage(msg)
@@ -210,7 +195,7 @@ local function sendWebhook(data)
 	end)
 end
 
--- FIXED SERVER HOPPING FUNCTION FOR DELTA EXECUTOR (Bypasses Verify Teleport Toggle)
+-- FIXED DELTA VERIFY-TELEPORT BYPASS SERVER HOPPING FUNCTION
 local function serverHop(reason)
 	local message = createMessage(reason or "Server hopping...")
 	
@@ -245,3 +230,90 @@ local function serverHop(reason)
 		TeleportService:Teleport(game.PlaceId, localPlayer)
 	end
 end
+
+-- ==========================================
+-- RECONSTRUCTED UI FEATURES AND BUTTONS SECTION
+-- ==========================================
+
+-- MAIN TAB FEATURES
+local AutoHuntToggle = Tab:CreateToggle({
+	Name = "Auto Hunt Gamemaster Room",
+	CurrentValue = false,
+	Flag = "AutoHuntGM",
+	Callback = function(Value)
+		_G.IsScanning = Value
+		if Value then
+			StatusLabel:SetText("Status: Scanning rooms...")
+			task.spawn(function()
+				while _G.IsScanning do
+					task.wait(2)
+					local instances = workspace:FindFirstChild("__THINGS") and workspace.__THINGS:FindFirstChild("Instances")
+					local gmStage = instances and instances:FindFirstChild("GameMastersStage", true)
+					
+					if gmStage then
+						StatusLabel:SetText("Status: Gamemaster Found!")
+						Rayfield:Notify({Title = "Target Found!", Content = "Gamemaster room detected in this server!", Duration = 10})
+						local char = getCharacter()
+						if char and gmStage:FindFirstChild("Enter") then
+							char:PivotTo(gmStage.Enter.CFrame)
+						end
+						_G.IsScanning = false
+						break
+					else
+						StatusLabel:SetText("Status: Not found. Hopping server...")
+						serverHop("Gamemaster Stage not found. Looking for a new server...")
+						break
+					end
+				end
+			end)
+		else
+			StatusLabel:SetText("Status: Idle")
+		end
+	end,
+})
+
+local FreeEggTPButton = Tab:CreateButton({
+	Name = "Teleport to Free Egg Room",
+	Callback = function()
+		local instances = workspace:FindFirstChild("__THINGS") and workspace.__THINGS:FindFirstChild("Instances")
+		local target = instances and (instances:FindFirstChild("DeepFreeEggRoom1", true) or instances:FindFirstChild("DeepFreeEggRoom2", true))
+		if target and target:FindFirstChild("Enter") then
+			getCharacter():PivotTo(target.Enter.CFrame)
+		else
+			Rayfield:Notify({Title = "Error", Content = "Free Egg Room not generated in this server.", Duration = 3})
+		end
+	end,
+})
+
+local LockedEggTPButton = Tab:CreateButton({
+	Name = "Teleport to Locked Egg Room",
+	Callback = function()
+		local instances = workspace:FindFirstChild("__THINGS") and workspace.__THINGS:FindFirstChild("Instances")
+		local target = instances and instances:FindFirstChild("DeepLockedEggRoom", true)
+		if target and target:FindFirstChild("Enter") then
+			getCharacter():PivotTo(target.Enter.CFrame)
+		else
+			Rayfield:Notify({Title = "Error", Content = "Locked Egg Room not found.", Duration = 3})
+		end
+	end,
+})
+
+-- BOSS CHEST TAB FEATURES
+local BossTPButton = MiniBossTab:CreateButton({
+	Name = "Teleport to Boss Chest Room",
+	Callback = function()
+		local instances = workspace:FindFirstChild("__THINGS") and workspace.__THINGS:FindFirstChild("Instances")
+		local target = instances and (instances:FindFirstChild("DeepChestRoom1", true) or instances:FindFirstChild("DeepChestRoom2", true) or instances:FindFirstChild("DeepChestRoom3", true))
+		if target and target:FindFirstChild("Enter") then
+			getCharacter():PivotTo(target.Enter.CFrame)
+		else
+			Rayfield:Notify({Title = "Error", Content = "Boss Chest Room not found.", Duration = 3})
+		end
+	end,
+})
+
+local AutoFarmBoss = MiniBossTab:CreateToggle({
+	Name = "Auto Farm Boss Chest",
+	CurrentValue = false,
+	Flag = "AutoBoss",
+	Callback = function(Value)
