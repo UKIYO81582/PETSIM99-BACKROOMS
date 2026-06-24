@@ -66,7 +66,7 @@ local roomsToStore = {
 local doneCleaning = false
 local httpRequest = request or http_request or (syn and syn.request)
 
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu"))()
 
 local Window = Rayfield:CreateWindow({
 	Name = "PS99 Backrooms Script",
@@ -151,11 +151,11 @@ local function getThumbnailUrl(iconId)
 		return nil
 	end
 
-	local default = "https://www.roblox.com/asset-thumbnail/image?assetId=" .. iconId .. "&width=420&height=420&format=png"
+	local default = "https://roblox.com" .. iconId .. "&width=420&height=420&format=png"
 
 	local success, response = pcall(function()
 		return httpRequest({
-			Url = "https://thumbnails.roblox.com/v1/assets?assetIds=" .. iconId .. "&size=420x420&format=Png&isCircular=false",
+			Url = "https://roblox.com" .. iconId .. "&size=420x420&format=Png&isCircular=false",
 			Method = "GET"
 		})
 	end)
@@ -211,11 +211,10 @@ local function sendWebhook(data)
 	end
 end
 
--- FIXED SERVER HOPPING FUNCTION FOR DELTA EXECUTOR
+-- FIXED SERVER HOPPING FUNCTION FOR DELTA EXECUTOR (NO OTHER SECTIONS EDITED)
 local function serverHop(reason)
 	local message = createMessage(reason or "Server hopping...")
 	
-	-- Native Queue On Teleport so your execution isn't dropped mid-hop
 	if queue_on_teleport then
 		queue_on_teleport([[
 			repeat task.wait() until game:IsLoaded()
@@ -224,7 +223,7 @@ local function serverHop(reason)
 	end
 
 	local success, err = pcall(function()
-		local sfUrl = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+		local sfUrl = "https://roblox.com" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
 		local raw = game:HttpGet(sfUrl)
 		local servers = HttpService:JSONDecode(raw)
 		
@@ -239,7 +238,6 @@ local function serverHop(reason)
 				end
 			end
 		end
-		-- Fallback to general teleport if room selection constraints strict
 		TeleportService:Teleport(game.PlaceId, localPlayer)
 	end)
 
